@@ -123,6 +123,19 @@ export interface PairingRedeemResult {
   addresses: ServerAddress[];
 }
 
+/** Another conversation tied to a bot's main chat; only the fields this app reads. */
+export interface ConversationContextItem {
+  kind: 'subagent' | 'private';
+  /** For `private`: the bot on the other side of the conversation. */
+  botId: string;
+  conversationId: number;
+  isRunning: boolean;
+}
+
+export interface ConversationContextPage {
+  items: ConversationContextItem[];
+}
+
 /** The procedures this app calls, typed by hand. */
 export interface OrbsClient {
   conversation: {
@@ -135,6 +148,10 @@ export interface OrbsClient {
       input: { botId: string; limit?: number },
       options?: { signal?: AbortSignal },
     ): Promise<unknown>;
+    contexts(
+      input: { botId: string; kind: 'subagent' | 'private'; limit?: number },
+      options?: { signal?: AbortSignal },
+    ): Promise<ConversationContextPage>;
   };
   activity: {
     list(input: { botId: string; before?: number }, options?: { signal?: AbortSignal }): Promise<ActivityPage>;

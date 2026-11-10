@@ -11,7 +11,6 @@ import type {
   Routine,
 } from '../orbs/orbs.types';
 import type {
-  BotActivity,
   BotState,
   ConnectionStatus,
   OfficeEvent,
@@ -20,6 +19,7 @@ import type {
 } from './office.types';
 import {
   activityFromSpan,
+  busyFallback,
   chatLinesFrom,
   botColor,
   fatalMessage,
@@ -27,6 +27,7 @@ import {
   nextRoutine,
   pairMeetings,
   subagentsOf,
+  toolFamily,
 } from './office-feed.utils';
 import type { MeetingCandidate } from './office-feed.utils';
 
@@ -38,6 +39,8 @@ const RECONNECT_DELAY_MS = 2_000;
 const MAX_INITIAL_FAILURES = 3;
 const PEER_PARTNER_TTL_MS = 10 * 60_000;
 const HISTORY_LIMIT = 30;
+/** The daemon's maximum page size for `conversation.contexts`. */
+const PRIVATE_CONTEXT_LIMIT = 100;
 /** The daemon's limit for one message (`conversationSubmit.content`). */
 const MAX_MESSAGE_LENGTH = 64_000;
 
@@ -56,6 +59,8 @@ function sendFailureMessage(code: string | null): string {
 interface BotDetail {
   run: ActivityRun | null;
   approvals: number;
+  /** Bots with a running private conversation this bot opened; fetched only while it is messaging. */
+  peers: readonly string[];
 }
 
 /** Everything that belongs to one connection attempt; aborting `signal` stops all of it. */
@@ -134,7 +139,8 @@ export function createOfficeFeed({ grants = browserGrantStorage, deviceName }: O
         const detail = current.details.get(item.botId);
         const run = detail?.run ?? null;
         const span = run === null ? null : mainSpan(run);
-        const activity: BotActivity = run === null ? { kind: 'idle' } : activityFromSpan(span, detail?.approvals ?? 0);
+        const isBusy = item.isWorking || item.isRunning;
+        const activity = busyFallback(run === null ? { kind: 'idle' } : activityFromSpan(span, detail?.approvals ?? 0), isBusy);
         bots.set(item.botId, {
           id: item.botId,
           name: item.name,
@@ -167,6 +173,7 @@ export function createOfficeFeed({ grants = browserGrantStorage, deviceName }: O
           family: activity.kind === 'tool' ? activity.family : null,
           inputs: span?.input === null || span === null ? [] : Object.values(span.input),
           hasLivePeerRun: run !== null && run.isLive && run.trigger === 'peer',
+          privatePeers: detail?.peers ?? [],
           peerRunTitle: run !== null && run.isLive && run.trigger === 'peer' ? run.title : null,
         });
       }
@@ -341,7 +348,7 @@ export function createOfficeFeed({ grants = browserGrantStorage, deviceName }: O
 
           if (live === undefined) {
             trackedRunId = null;
-            current.details.set(botId, { run: null, approvals: 0 });
+            current.details.set(botId, { run: null, approvals: 0, peers: [] });
             scheduleEmit();
             if (!isBotBusy(current, botId)) return;
           } else {
@@ -350,6 +357,8 @@ export function createOfficeFeed({ grants = browserGrantStorage, deviceName }: O
             const approvals = span?.kind === 'waiting'
               ? (await current.client.tools.pending({ botId }, { signal: callSignal(current) })).length
               : 0;
+            const isMessaging = span?.kind === 'tool' && toolFamily(span.tool ?? '') === 'message';
+            const peers = isMessaging ? await runningPrivatePeers(current, botId) : [];
 
             if (run.id !== trackedRunId) {
               if (!isFirstRun && (run.trigger === 'routine' || run.trigger === 'peer')) {
@@ -363,7 +372,7 @@ export function createOfficeFeed({ grants = browserGrantStorage, deviceName }: O
               current.failedRuns.add(run.id);
               dispatch({ kind: 'failed', botId });
             }
-            current.details.set(botId, { run, approvals });
+            current.details.set(botId, { run, approvals, peers });
             scheduleEmit();
           }
         } catch (error) {
@@ -374,6 +383,20 @@ export function createOfficeFeed({ grants = browserGrantStorage, deviceName }: O
       }
     } finally {
       current.pollers.delete(botId);
+    }
+  }
+
+  /** Recipients of the private conversations this bot opened that are running now. Empty when the daemon cannot say. */
+  async function runningPrivatePeers(current: Session, botId: string): Promise<string[]> {
+    try {
+      const page = await current.client.conversation.contexts(
+        { botId, kind: 'private', limit: PRIVATE_CONTEXT_LIMIT },
+        { signal: callSignal(current) },
+      );
+      return page.items.filter((item) => item.kind === 'private' && item.isRunning).map((item) => item.botId);
+    } catch (error) {
+      if (!current.controller.signal.aborted) recordError(`private contexts fetch failed for bot ${botId}`, error);
+      return [];
     }
   }
 

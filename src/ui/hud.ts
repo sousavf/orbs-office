@@ -117,7 +117,7 @@ function bindRowMenu(
 function tooltipLines(bot: BotState, bots: ReadonlyMap<string, BotState>, now: number, place?: IdlePlace): string[] {
   const lines = [describeActivity(bot.activity, bots, place)];
   const run = bot.run;
-  if (run === null) return [...lines, 'No active run'];
+  if (run === null) return [...lines, bot.activity.kind === 'idle' ? 'No active run' : 'Busy outside its main chat'];
   lines.push(
     `Run: ${run.title ?? 'Untitled'}`,
     `Trigger: ${run.trigger}`,

@@ -92,6 +92,14 @@ export function activityFromSpan(span: ActivitySpan | null, approvalCount: numbe
   }
 }
 
+/**
+ * The daemon can report a bot as working while its main chat has no live run, for example when it works in a
+ * private conversation with another bot. Such a bot is busy, with no detail about what it is doing.
+ */
+export function busyFallback(activity: BotActivity, isBusy: boolean): BotActivity {
+  return activity.kind === 'idle' && isBusy ? { kind: 'thinking' } : activity;
+}
+
 export function mainAgent(run: ActivityRun): ActivityAgent | null {
   return run.agents.find((agent) => agent.isMain) ?? null;
 }
@@ -130,6 +138,8 @@ export interface MeetingCandidate {
   /** Values of the current tool span's input, for naming the peer. */
   inputs: readonly string[];
   hasLivePeerRun: boolean;
+  /** Bots with a running private conversation that this bot opened. */
+  privatePeers: readonly string[];
   /** Title of the live peer run; Orbs starts delivered bot messages with "[Private message from <name>.". */
   peerRunTitle: string | null;
 }
@@ -144,7 +154,8 @@ export function peerSenderName(title: string | null): string | null {
 /**
  * Pairs bots that are talking to each other. A peer run names its sender in the title; a peer reply does not, so
  * `recentPartners` (botId -> partner remembered from an earlier named message) covers the reply direction. The
- * sending bot's own `bot_message` call is a last resort. Returns botId -> partner ids.
+ * sending bot's own `bot_message` call is a last resort; the sender's running private conversations also count as
+ * peers there. Returns botId -> partner ids.
  */
 export function pairMeetings(
   candidates: readonly MeetingCandidate[],
@@ -170,7 +181,7 @@ export function pairMeetings(
 
   for (const sender of candidates) {
     if (sender.family !== 'message') continue;
-    const peers = candidates.filter((c) => c.hasLivePeerRun && c.botId !== sender.botId);
+    const peers = candidates.filter((c) => c.botId !== sender.botId && (c.hasLivePeerRun || sender.privatePeers.includes(c.botId)));
     const haystack = sender.inputs.join('\n').toLowerCase();
     const named = peers.find((peer) => mentions(haystack, peer));
     const target = named ?? (peers.length === 1 ? peers[0] : undefined);

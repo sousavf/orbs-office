@@ -11,7 +11,7 @@
     "build:public": "tsc --noEmit && vite build --mode public --config vite.public.config.ts",
     "preview": "vite preview",
     "bridge": "bun bridge/index.ts",
-    "test": "bun test bridge shared relay-server",
+    "test": "bun test bridge shared relay-server src",
     "relay": "bun relay-server/index.ts"
   },
   "dependencies": {

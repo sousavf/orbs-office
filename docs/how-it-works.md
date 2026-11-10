@@ -5,6 +5,7 @@ A live 3D office that shows Orbs bots at work. A real building built in Three.js
 | Daemon state | In the office |
 | --- | --- |
 | No live run | Follows the daily routine (below): sits at its desk, takes short breaks, eats at lunch, sleeps in its bed after hours. Walks to the desk when a run starts and back to its routine place afterwards |
+| Working, but no live run in its main chat (for example in a private conversation with another bot) | Shown thinking at its desk, without a tool bubble |
 | `thinking` span | Walks to the desk if needed, typing, monitor on, thought bubble |
 | `tool` span | Bubble by tool family: terminal, web, file, MCP, other |
 | `waiting` span | Walks to the approvals counter, "?" with the pending count |
