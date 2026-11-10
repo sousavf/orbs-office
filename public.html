@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Orbs Office - live</title>
+    <meta name="description" content="A live, anonymised view of our AI team at work." />
+    <!-- Not indexed for now. Remove this line to let search engines list the page. -->
+    <meta name="robots" content="noindex, nofollow" />
+    <!-- The office's IANA time zone: work hours, lunch, sleep and daylight follow it for every viewer. -->
+    <meta name="office-timezone" content="Europe/Luxembourg" />
+    <!--
+      Live endpoints in priority order, comma-separated. `self` is this page's own host. The page uses the first and
+      fails over to the next; the build derives the CSP connect-src from this same list. See docs/public-mirror.md.
+      Example: wss://office-live1.example.com,wss://office-live2.example.com,self
+    -->
+    <!-- Every hostname this page is served from (the Worker's custom domains): the CSP names each one explicitly. -->
+    <meta name="office-hosts" content="office.example.com" />
+    <meta name="office-relays" content="self" />
+  </head>
+  <body>
+    <main>
+      <div id="game"></div>
+      <div id="overlay"></div>
+    </main>
+    <noscript><p class="pub-fallback">Orbs Office needs JavaScript to draw the live office.</p></noscript>
+    <script type="module" src="/src/public-main.ts"></script>
+  </body>
+</html>

@@ -1,0 +1,12 @@
+node_modules
+dist
+.DS_Store
+.claude/
+worker/public-dist/
+
+# standalone relay: secrets and runtime data never go in the repo
+relay-server/relay.env
+relay-server/data/
+relay-server/dist/
+public.local.json
+worker/wrangler.local.jsonc

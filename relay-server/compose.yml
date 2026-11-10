@@ -1,0 +1,41 @@
+# Run from the repository root:  docker compose -f relay-server/compose.yml up -d --build
+# Create relay-server/relay.env first (see relay.env.example); it is gitignored and holds the publish token.
+name: orbs-office-relay
+
+services:
+  relay:
+    build:
+      context: ..
+      dockerfile: relay-server/Dockerfile
+    image: orbs-office-relay:local
+    restart: unless-stopped
+    # Reachable from the host only: the Cloudflare Tunnel (cloudflared on the host) is the public door.
+    ports:
+      - "127.0.0.1:8790:8790"
+    env_file:
+      - ./relay.env
+    environment:
+      HOST: 0.0.0.0
+      PORT: "8790"
+      DATA_DIR: /data
+      TRUST_PROXY: cloudflare
+    read_only: true
+    tmpfs:
+      - /tmp:size=16m,mode=1777
+    volumes:
+      - relay-data:/data
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    mem_limit: 256m
+    cpus: 0.5
+    pids_limit: 128
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  relay-data:

@@ -1,0 +1,8 @@
+# Used by `docker build -f relay-server/Dockerfile .`: send only what the image needs.
+*
+!shared
+!relay-server
+relay-server/relay.env
+relay-server/data
+relay-server/dist
+**/*.test.ts

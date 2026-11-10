@@ -1,0 +1,22 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "orbs-office-relay",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-20",
+  // Your public hostname(s). Keep real values in wrangler.local.jsonc (gitignored) and deploy with `wrangler deploy -c wrangler.local.jsonc`.
+  "routes": [{ "pattern": "office.example.com", "custom_domain": true }],
+  "workers_dev": false,
+  "assets": {
+    "directory": "./public-dist",
+    "binding": "ASSETS",
+    // Only the dynamic routes run the Worker; static files are served directly (headers come from public-dist/_headers).
+    "run_worker_first": ["/live", "/publish", "/snapshot.json", "/viewers.json", "/state.json", "/healthz"]
+  },
+  "durable_objects": {
+    "bindings": [{ "name": "OFFICE_RELAY", "class_name": "OfficeRelay" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["OfficeRelay"] }],
+  "observability": { "enabled": true, "head_sampling_rate": 1 },
+  // Set with `wrangler secret put PUBLISH_TOKEN`; never put its value in this file.
+  "secrets": { "required": ["PUBLISH_TOKEN"] }
+}

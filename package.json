@@ -1,0 +1,27 @@
+{
+  "name": "orbs-office",
+  "version": "0.1.0",
+  "license": "MIT",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "check": "tsc --noEmit",
+    "build:public": "tsc --noEmit && vite build --mode public --config vite.public.config.ts",
+    "preview": "vite preview",
+    "bridge": "bun bridge/index.ts",
+    "test": "bun test bridge shared relay-server",
+    "relay": "bun relay-server/index.ts"
+  },
+  "dependencies": {
+    "@earendil-works/chord": "1.4.0",
+    "@orpc/client": "2.0.0-beta.39",
+    "three": "0.186.1"
+  },
+  "devDependencies": {
+    "@types/three": "0.186.0",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.7"
+  }
+}
