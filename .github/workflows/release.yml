@@ -1,0 +1,41 @@
+name: Release
+
+# Pushing a tag like v0.2.0 runs the checks and publishes a GitHub release with generated notes.
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
+      - name: Install
+        run: |
+          bun install --frozen-lockfile
+          cd worker && bun install --frozen-lockfile
+      - name: Check, test and build
+        run: |
+          bun run check
+          (cd worker && ./node_modules/.bin/tsc --noEmit)
+          bun run test
+          bun run build
+          bun run build:public
+      - name: Tag matches package version
+        run: test "v$(bun -e 'console.log(require("./package.json").version)')" = "${GITHUB_REF_NAME}"
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1; then
+            echo "Release ${GITHUB_REF_NAME} already exists"
+          else
+            gh release create "${GITHUB_REF_NAME}" --title "${GITHUB_REF_NAME}" --generate-notes --verify-tag
+          fi

@@ -106,6 +106,16 @@ To look around without a daemon, open `http://localhost:5190/?preview&bots=12`. 
 
 More detail: [docs/how-it-works.md](docs/how-it-works.md) and [docs/public-mirror.md](docs/public-mirror.md).
 
+## Compatibility
+
+Orbs Office talks to the Orbs daemon over its RPC protocol and mirrors a small part of its contracts by hand (`src/orbs/orbs.types.ts`), so it is tied to the Orbs version it was written against.
+
+| Orbs Office | Orbs | Daemon protocol | Status |
+| --- | --- | --- | --- |
+| 0.1.0 | 0.1.6 | 1 | Tested against a development daemon built from Orbs 0.1.6 plus later, unreleased commits |
+
+Other Orbs versions are untested. A daemon with a different protocol version refuses the connection and the app says so. If Orbs changes the calls the office uses (the conversation list, activity runs, routines, pending approvals, history and submit), the hand-written types need updating.
+
 ## Status
 
 Orbs Office is young. It has been developed against a development Orbs daemon and tested in desktop browsers. The local app currently runs through the Vite development server. Expect rough edges, and please open an issue when you find one.
